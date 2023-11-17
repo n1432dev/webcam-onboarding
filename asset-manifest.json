@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/webcam-onboarding/static/css/main.a6dcfbfd.css",
+    "main.js": "/webcam-onboarding/static/js/main.dafe8faf.js",
+    "static/media/defult-Video.png": "/webcam-onboarding/static/media/defult-Video.776ae5b0b6022fe9c99c.png",
+    "index.html": "/webcam-onboarding/index.html",
+    "main.a6dcfbfd.css.map": "/webcam-onboarding/static/css/main.a6dcfbfd.css.map",
+    "main.dafe8faf.js.map": "/webcam-onboarding/static/js/main.dafe8faf.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a6dcfbfd.css",
+    "static/js/main.dafe8faf.js"
+  ]
+}
