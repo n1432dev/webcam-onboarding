@@ -1,0 +1,232 @@
+<link rel="preload" href="//cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js" as="script" />
+<link rel="preload" href="//code.jquery.com/ui/1.12.1/jquery-ui.js" as="script" />
+<link rel="preload" href="//api.segwik.com/js/aws-sdk-2.553.0.min.js" as="script" />
+
+<script src="//cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
+<script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="//api.segwik.com/js/aws-sdk-2.553.0.min.js"></script>
+
+    <script type="text/javascript">
+        var vrSiteUrl = "";
+        var s3;
+        var identity_id = "";
+        var token = "";
+        var identity_pool_id = "";
+        var private_bucket = "";
+        var public_bucket = "";
+        var cloudfront_url = "";
+        var s3_bucket_region = "";
+        $(document).ready(function() {
+            getS3Details();
+        });
+        function getS3Details() {
+            //  debugger;
+            $.ajax({
+                type: "GET",
+                async: true,
+                ContentDisposition: "attachment",
+                url: vrSiteUrl + "/api/s3/token/5525",
+                // url: "https://api.segwik.com/api/s3/cloudUrl/",
+                cache: false,
+                success: function(data) {
+                    var d = JSON.parse(data);
+                    //debugger;
+                    if (d.success == false) {
+                        alert("token error " + d.message);
+                        return false;
+                    }
+                    identity_id = d.identity_id;
+                    token = d.token;
+                    identity_pool_id = d.identity_pool_id;
+                    private_bucket = d.private_bucket;
+                    public_bucket = d.public_bucket;
+                    cloudfront_url = d.cloudfront_url;
+                    s3_bucket_region = "us-east-1";
+                    AWS.config.region = s3_bucket_region; // Region
+                    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+                        IdentityPoolId: identity_pool_id,
+                        IdentityId: identity_id,
+                        Logins: {
+                            "cognito-identity.amazonaws.com": token
+                        }
+                    });
+                    AWS.config.apiVersions = {
+                        s3: "2006-03-01",
+                    };
+                    s3 = new AWS.S3({
+                        httpOptions: {
+                            connectTimeout: 1000 * 1000, // time succeed in starting the call
+                            timeout: 1000 * 1000, // time to wait for a response
+                            // the aws-sdk defaults to automatically retrying
+                            // if one of these limits are met.
+                        }
+                    });
+                },
+                error: function(error) {
+                    //   debugger;
+                    alert("Error token : ", error);
+                    return false;
+                    console.log(error.statusText);
+                }
+            });
+        }
+        function uploadFile(fileUploaderid) {
+            if ($("#pg_bgimg").val() != "")
+            {
+                var ext = $("#pg_bgimg").val().split(".").pop().toLowerCase();
+                if ($.inArray(ext, ["jpg", "JPG", "png", "PNG", "gif", "GIF", "pdf", "PDF", "txt", "docx", "mp4", "mpeg4",
+                        "m4v"
+                    ]) == -1) {
+                    alert("Invalid file format");
+                    $("#pg_bgimg").addClass("needsfilled");
+                    return false;
+                }
+            }
+            var s3type = $("input[name=fz_s3type]").val();
+            if (s3type == "") {
+                alert("Please select gallery type.");
+                $("#" + fileUploaderid).val("");
+                return false;
+            } else {
+                if (s3type == "private") {
+                    bucket = private_bucket;
+                } else {
+                    bucket = public_bucket;
+                }
+            }
+            console.log(bucket);
+            // debugger;
+            var gallery_type = "";
+            //$("#image_pic_web").val("");
+            var fileChooser = document.getElementById(fileUploaderid);
+            var file = fileChooser.files[0];
+            if (file) {
+                $("#uploading_prog").show();
+                $("#update_btn").hide();
+                var file_arr = file.name.split(".");
+                var fileName = new Date().getTime() + "." + file_arr[file_arr.length - 1];
+                if (fileUploaderid == "pg_bgimg") {
+                    var ext = file.name.split(".").pop().toLowerCase();
+                    if ($.inArray(ext, ["jpg", "JPG", "png", "PNG", "gif", "GIF", "pdf", "PDF", "txt", "docx", "mp4",
+                            "mpeg4", "m4v"
+                        ]) == -1) {
+                        $("#pg_bgimg").addClass("needsfilled");
+                        return false;
+                    }
+                }
+                var fileName = fileName.replace(/\s/g, "-");
+                //console.log(fileName);
+                var params = {
+                    Bucket: bucket,
+                    Key: "5525/uploads/document/" + fileName,
+                    ContentType: file.type,
+                    ContentDisposition: "inline",
+                    Body: file,
+                    //         ACL:"public-read"
+                };
+                //console.log(s3);
+                s3.putObject(params, function(err, res) {
+                    // debugger;
+                    console.log(res);
+                    if (err) {
+                        alert("Error uploading data: ", err);
+                    } else {
+                        //console.log("s3 response", res);
+                        //  debugger;
+                        $("#img" + fileUploaderid).attr("src", cloudfront_url + "5525/uploads/document/" +
+                            fileName);
+                        //console.log($("#image_pic_display"));
+                        var filenameValue = "5525/uploads/document/" + fileName;
+                        document.getElementById("fz_" + fileUploaderid).value = filenameValue;
+                        // debugger;
+                    }
+                    $("#uploading_prog").hide();
+                    $("#update_btn").show();
+                });
+            } else {
+                alert("Nothing to upload.");
+            }
+        }
+        var s3ImageData = "";
+    </script>
+
+<script type="text/javascript">
+    var vrSiteUrl = "https://api.segwik.com";
+
+    $(document).ready(function () {
+        $("#registration_form").validate({
+            ignore: ":hidden",
+            rules: {
+                phone: {
+                    required: true,
+                    maxlength: 10,
+                    minlength: 10
+                },
+            },
+            submitHandler: function (form) {
+var country_name = [];
+   $('[name=country_item]:checked').each(function() {
+      country_name.push($(this).val());
+   });
+ var name = $('input[name=username]').val(); // try "Paul", "Paul Steve"
+                    var first_name = name.split(' ')[0]
+                    var last_name = name.substring(first_name.length).trim()
+
+                var formData = {
+                    "lead_from": $("input[name=lead_from]").val(),
+                    "data_source": "portal site",
+                    "account_id": $("input[name=account_id]").val(),
+                     'firstname': first_name,
+                     'lastname': last_name,
+                    "email": $("input[name=email]").val(),
+                    "message": $("textarea[name=message]").val(),
+                    "json_data": {
+                        "custom_fields": {
+                            "fz_pg_bgimg": $("input[name=fz_pg_bgimg]").val(),
+                            "country_name": country_name,
+
+                        }
+                    },
+                    "token": $("input[name=token]").val(),
+                    "custom_flags": "1596",
+                    "email_json": [{
+                        "is_primary": "1",
+                        "type": "Work",
+                        "email": $("input[name=email]").val()
+                    }],
+                
+                    "cust_type": 3,
+                    "form_id": $("input[name=form_id2]").val(),
+                    "status": "8",
+                    "qualification_status": ""
+                }
+console.log(formData);
+                $.ajax({
+                    type: "POST", // define the type of HTTP verb we want to use (POST for our form)
+                   url: vrSiteUrl + "/api/v2/customer/add",
+                    data: formData, // our data object
+                    dataType: "json", // what type of data do we expect back from the server
+                    encode: true
+                })
+                    .done(function (data) {
+                        console.log(data);
+                        if (data.success) {
+                            document.getElementById("registration_form").reset();
+                            $("#footerdvMessage").html(
+                                "Thank you for contacting us."
+                            );
+                            if (data.redirect_url) {
+                                window.location = data.redirect_url;
+                            }
+                        } else {
+                            $("#footerdvMessage").html(data.message);
+                        }
+                    });
+                event.preventDefault();
+                return false; // required to block normal submit since you used ajax
+            }
+        });
+
+
+    });
+</script>
